@@ -113,7 +113,6 @@ public class GameScene: SKScene {
         return
         
     }
-
     func drawLines(on set: [CGPoint]) {
         for (i, node) in self.lineNodes.enumerated() {
             
