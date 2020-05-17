@@ -57,6 +57,7 @@ public class GameScene: SKScene {
             
             newNode.fillColor = UIColor.init(hue: CGFloat.pi * CGFloat(i) / CGFloat(self.nodeCount), saturation: 1, brightness: 1, alpha: 1)
             newNode.strokeColor = .clear
+            newNode.zPosition = 100
 //            newNode.blendMode = self.defaultBlendMode
             
             self.setNodes.append(newNode)
@@ -83,56 +84,84 @@ public class GameScene: SKScene {
         
         guard !self.isLocked else { return }
         let zPos = pos.normalized(on: self.frame)
-        var z = Z.zero
         
-        for (i, node) in self.setNodes.enumerated() {
+        let set = self.computeSet(on: zPos)
+        
+        if self.presentationMode == .lights {
+
+            self.drawOutlines(on: set)
+            return
+        }
+        
+        self.drawDots(on: set)
+        
+        if self.presentationMode == .dotsOverLines {
+            self.drawLines(on: set)
+        }
+    }
+
+    func drawOutlines(on set: [CGPoint]) {
+        let path = RoundedCornerGenerator.path_with_rounded_corners(points: set, corner_radius: 20)
+        
+        guard let node = self.setNodes.first else { return }
+        if node.parent == nil { self.addChild(node) }
+        
+        node.path = path
+        node.strokeColor = .blue
+        node.fillColor = .clear
+        
+        return
+        
+    }
+
+    func drawLines(on set: [CGPoint]) {
+        for (i, node) in self.lineNodes.enumerated() {
             
-            let newZ = (z * z + zPos)
+            guard i < set.count - 1, self.setNodes[i].parent != nil else { continue }
             
-            if z.real == .infinity || z.imaginary == .infinity{
+            let from = self.setNodes[i].position
+            let to = self.setNodes[i + 1 ].position
+            let color = self.setNodes[i].fillColor
+            
+            let path = CGMutablePath()
+            
+            path.move(to: from)
+            path.addLine(to: to)
+            
+            node.path = path
+            node.strokeColor = color
+        }
+    }
+    func drawDots(on set: [CGPoint]) {
+        for (i, point) in set.enumerated() {
+            let node = self.setNodes[i]
+            
+            if point.x == .infinity || point.y == .infinity{
                 node.removeFromParent()
                 return
             } else if node.parent == nil {
                 self.addChild(node)
             }
-            
-            if self.presentationMode == .linesOnly && node.parent != nil {
-                node.removeFromParent()
-            }
-            
-            
-            node.position = z.mapped(to: self.frame, scale: self.scale)
-            
-            if self.presentationMode != .dotsOnly {
-            
-                self.drawLine(from: z.mapped(to: self.frame, scale: self.scale), to: newZ.mapped(to: self.frame, scale: self.scale), on: self.lineNodes[i], color: node.fillColor)
-            }
-            
-            z = newZ
+
+            node.position = point
             
         }
-        
     }
     
-    func drawLine(from: ScreenPoint, to: ScreenPoint, on node: SKShapeNode, color: UIColor) {
-        let path = CGMutablePath()
-        
-        path.move(to: from)
-        path.addLine(to: to)
-//        path.addQuadCurve(to: to, control: to)
-        
-        node.path = path
-        node.strokeColor = color
-        
-    }
     
-    func smalldX(_ p: CGPoint, _ p0: CGPoint) -> CGPoint {
-        let m = (p.y - p0.y) / (p.x - p0.x)
-        let n = p.y - m*p.x
-        let dx: CGFloat = 0.5
-        let newX = p.x - dx
+    func computeSet(on zPos: Z) -> [CGPoint] {
         
-        return CGPoint(x: newX, y: m*newX + n)
+        var z = Z.zero
+        var ret = [CGPoint]()
+        
+        for _ in 0..<self.nodeCount {
+
+            z = (z.squared() + zPos)
+            let newPoint = z.mapped(to: self.frame, scale: self.scale)
+            ret.append(newPoint)
+        }
+        
+        return ret
     }
     
     // MARK: - Lock
@@ -160,15 +189,12 @@ public class GameScene: SKScene {
     }
     
     func touchMoved(toPoint pos : CGPoint) {
-        
-        NSLog("[PG] TouchMoved  touchCount\(self.touchCount)")
         self.updateMandelbrot(screenPoint: pos)
     }
     
     func touchUp(atPoint pos : CGPoint) {
         self.touchCount -= 1
         
-        NSLog("[PG] TouchUP  touchCount\(self.touchCount)")
         self.updateLockedState()
     }
     
