@@ -83,35 +83,57 @@ public class GameScene: SKScene {
         
         guard !self.isLocked else { return }
         let zPos = pos.normalized(on: self.frame)
-        var z = Z.zero
         
-        for (i, node) in self.setNodes.enumerated() {
+        let set = self.computeSet(on: zPos)
+        
+
+        self.drawDots(on: set)
+//
+//
+//
+//            if self.presentationMode != .dotsOnly {
             
-            let newZ = (z * z + zPos)
+//                self.drawLine(from: z.mapped(to: self.frame, scale: self.scale), to: newZ.mapped(to: self.frame, scale: self.scale), on: self.lineNodes[i], color: node.fillColor)
+//            }
             
-            if z.real == .infinity || z.imaginary == .infinity{
+        
+    }
+
+
+    func drawDots(on set: [CGPoint]) {
+        for (i, point) in set.enumerated() {
+            let node = self.setNodes[i]
+            
+            if point.x == .infinity || point.y == .infinity{
                 node.removeFromParent()
                 return
             } else if node.parent == nil {
                 self.addChild(node)
             }
-            
+
+
             if self.presentationMode == .linesOnly && node.parent != nil {
                 node.removeFromParent()
             }
             
-            
-            node.position = z.mapped(to: self.frame, scale: self.scale)
-            
-            if self.presentationMode != .dotsOnly {
-            
-                self.drawLine(from: z.mapped(to: self.frame, scale: self.scale), to: newZ.mapped(to: self.frame, scale: self.scale), on: self.lineNodes[i], color: node.fillColor)
-            }
-            
-            z = newZ
-            
+            node.position = point
+        }
+    }
+    
+    
+    func computeSet(on zPos: Z) -> [CGPoint] {
+        
+        var z = Z.zero
+        var ret = [CGPoint]()
+        
+        for _ in 0..<self.nodeCount {
+    
+            let newPoint = z.mapped(to: self.frame, scale: self.scale)
+            ret.append(newPoint)
+            z = (z.squared() + zPos)
         }
         
+        return ret
     }
     
     func drawLine(from: ScreenPoint, to: ScreenPoint, on node: SKShapeNode, color: UIColor) {
