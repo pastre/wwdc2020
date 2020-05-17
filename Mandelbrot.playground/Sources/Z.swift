@@ -36,3 +36,15 @@ func forceNegative(_ val: CGFloat) -> CGFloat{
 public func + (_ lhs: Z, _  rhs: Z) -> Z { Z(real: lhs.real + rhs.real, imaginary: lhs.imaginary + rhs.imaginary) }
 
 public func * (_ lhs: Z, _  rhs: Z) -> Z { Z(real: lhs.real * rhs.real - lhs.imaginary * rhs.imaginary, imaginary: lhs.imaginary * rhs.real + lhs.real * rhs.imaginary) }
+
+extension CGPoint {
+    func lenght() -> CGFloat {
+        return sqrt(self.x * self.x + self.y + self.y)
+    }
+    
+    func proportion(_ segment: CGFloat, _ lenght: CGFloat, _ dx: CGFloat, _ dy: CGFloat) -> CGPoint {
+        let factor = segment / lenght
+        
+        return CGPoint(x: self.x - dx * factor, y: self.y * dy * factor)
+    }
+}
